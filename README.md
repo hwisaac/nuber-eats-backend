@@ -10,7 +10,7 @@ nest.js
 4. `npm i`
 5. npm run start:dev
 
-## Nest 연습
+## Nest 기초
 
 ### AppModule
 
@@ -370,8 +370,175 @@ export class AppModule {}
 
 ### validating ConfigService
 
-> 조건이 갖춰지지 않으면 app이 실행되지 않게 하자
+> 조건이 갖춰지지 않으면 app이 실행되지 않게 하자!
 
-설치
+#### joi 설치
 
 - `npm i joi`
+- joi 는 스키마 설명 언어입니다.
+- joi 로 환경변수의 유효성을 검사하기 위해 설치해줍니다.
+
+`ConfigModule` 에 `validationSchema` 추가
+
+```ts
+import * as Joi from 'joi'; // js 로 작성됐기 때문에 이런식으로 import합니다.
+
+ConfigModule.forRoot({
+  isGlobal: true,
+  envFilePath: process.env.NODE_ENV === 'dev' ? '.env.dev' : '.env.test',
+  ignoreEnvFile: process.env.NODE_ENV === 'prod',
+  validationSchema: Joi.object({
+    NODE_ENV: Joi.string().valid('dev', 'prod').required(),
+    DB_HOST: Joi.string().required(),
+    DB_PORT: Joi.string().required(),
+    DB_USERNAME: Joi.string().required(),
+    DB_PASSWORD: Joi.string().required(),
+    DB_NAME: Joi.string().required(),
+  }),
+}),
+```
+
+## typeORM and Nest.js
+
+### Entity
+
+Entity는 TypeORM에서 데이터베이스의 테이블과 매핑되는 클래스입니다. Entity 클래스는 데이터베이스에서 테이블을 생성하고, 테이블의 각 열(column)을 클래스의 속성(property)으로 매핑합니다. Entity 클래스는 다음과 같은 형태로 정의됩니다.
+
+```ts
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  name: string;
+
+  @Column()
+  email: string;
+
+  @Column()
+  password: string;
+}
+```
+
+위 예제에서 @Entity() 데코레이터는 클래스가 Entity임을 나타냅니다. @PrimaryGeneratedColumn() 데코레이터는 id 속성이 기본 키(primary key)로 사용되고, 자동으로 생성되는 것을 나타냅니다. @Column() 데코레이터는 클래스의 속성이 데이터베이스 테이블의 열(column)과 매핑됨을 나타냅니다.
+
+Entity 클래스를 정의한 후, TypeORM을 사용하여 데이터베이스와 상호작용할 수 있습니다. 예를 들어, User Entity를 사용하여 데이터베이스에 새 사용자를 추가하는 코드는 다음과 같습니다.
+
+```ts
+import { getRepository } from 'typeorm';
+import { User } from './user.entity';
+
+const user = new User();
+user.name = 'John Doe';
+user.email = 'john.doe@example.com';
+user.password = 'password';
+
+const userRepository = getRepository(User);
+await userRepository.save(user);
+```
+
+위 코드에서 getRepository() 함수는 User Entity의 Repository를 반환합니다. save() 메서드를 사용하여 새 사용자를 데이터베이스에 추가합니다.
+
+Entity는 데이터베이스와 상호작용하는데 필수적인 요소이며, TypeORM을 사용하여 데이터베이스의 테이블과 애플리케이션의 객체 모델을 쉽게 매핑할 수 있습니다.
+
+<hr />
+
+`graphQL` 스키마와 `DB`에 저장되는 실제 데이터의 형식을 만들 수 있다.
+
+```ts
+// restaurants/entities/restaurant.entity.ts
+import { Field, ObjectType } from '@nestjs/graphql';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+@ObjectType()
+@Entity()
+export class Restaurant {
+  @PrimaryGeneratedColumn()
+  @Field((type) => Number)
+  id: number;
+
+  @Field((type) => String)
+  @Column()
+  name: string;
+
+  @Field((type) => Boolean)
+  @Column()
+  isVegan: boolean;
+
+  @Field((type) => String)
+  @Column()
+  address: string;
+
+  @Field((type) => String)
+  @Column()
+  ownersName: string;
+
+  @Field((type) => String)
+  @Column()
+  categoryName: string;
+}
+```
+
+postico 에서 새로고침하면 restaurant 테이블이 나온다.
+![](readMeImages/2023-03-23-20-52-12.png)
+
+### Repository
+
+`TypeORM`에서 `Repository`는 데이터베이스와 상호작용하는 데 사용되는 객체입니다. `Repository`는 `TypeORM`이 제공하는 메서드를 사용하여 데이터베이스의 테이블을 조회, 삽입, 갱신, 삭제할 수 있습니다. `Repository`는 `Entity`의 인스턴스를 생성하고 `Entity`와 관련된 CRUD(Create, Read, Update, Delete) 작업을 수행할 수 있습니다.
+
+예를 들어, 다음은 `User` `Entity`의 `Repository`를 생성하고 `User`를 데이터베이스에 저장하는 방법입니다.
+
+```typescript
+import { getRepository } from 'typeorm';
+import { User } from './user.entity';
+
+const userRepository = getRepository(User);
+
+const user = new User();
+user.name = 'John Doe';
+user.email = 'john.doe@example.com';
+user.password = 'password';
+
+await userRepository.save(user);
+```
+
+위 코드에서 `getRepository()` 함수는 `User` `Entity`의 `Repository`를 반환합니다. `save()` 메서드를 사용하여 User Entity의 인스턴스를 데이터베이스에 저장합니다.
+
+`Repository`는 Entity에 대한 CRUD 작업을 수행하는 데 사용되는 여러 메서드를 제공합니다. 일부 예시는 다음과 같습니다.
+
+- `find()`: 데이터베이스에서 Entity를 조회합니다.
+- `findOne()`: 데이터베이스에서 특정 Entity를 조회합니다.
+- `save()`: Entity를 데이터베이스에 저장합니다.
+- `update()`: Entity를 데이터베이스에서 업데이트합니다.
+- `delete()`: Entity를 데이터베이스에서 삭제합니다.
+
+이러한 메서드를 사용하여 데이터베이스의 데이터를 쉽게 조회, 삽입, 갱신, 삭제할 수 있습니다. `Repository`는 `TypeORM`을 사용하여 데이터베이스와 상호작용하는 데 필수적인 요소입니다.
+
+#### Active Record vs Data Mapper
+
+Active Record와 Data Mapper는 ORM(Object-Relational Mapping) 패턴에서 가장 많이 사용되는 두 가지 구현 방법입니다. 이 둘을 비교해보면 다음과 같은 차이점이 있습니다.
+
+1. 개념적 차이점
+   Active Record 패턴은 도메인 객체와 데이터베이스 테이블 간의 매핑을 담당하는 패턴입니다. 즉, 하나의 도메인 객체가 하나의 테이블과 매핑됩니다. 이러한 구조에서는 도메인 객체가 데이터베이스와 직접적으로 상호작용하며, CRUD(Create, Read, Update, Delete) 작업을 수행합니다.
+
+반면에 Data Mapper 패턴은 데이터베이스와 도메인 객체 간의 매핑을 담당하는 패턴입니다. 이러한 구조에서는 도메인 객체가 데이터베이스와 직접적으로 상호작용하지 않습니다. 대신에 Data Mapper가 도메인 객체와 데이터베이스 간의 매핑을 담당하며, CRUD 작업을 수행합니다.
+
+2. 구현 방법의 차이점
+   Active Record 패턴은 하나의 클래스가 도메인 객체와 데이터베이스 간의 매핑을 담당합니다. 이 클래스는 도메인 객체와 데이터베이스 테이블 간의 매핑 정보를 가지고 있으며, CRUD 작업을 수행할 수 있는 메서드를 제공합니다.
+
+Data Mapper 패턴은 두 개의 클래스가 필요합니다. 하나는 도메인 객체를 나타내는 클래스이고, 다른 하나는 데이터베이스와 상호작용하는 Data Mapper 클래스입니다. Data Mapper 클래스는 도메인 객체와 데이터베이스 간의 매핑 정보를 가지고 있으며, CRUD 작업을 수행합니다.
+
+3. 유연성 차이점
+   Active Record 패턴은 도메인 객체와 데이터베이스 테이블 간의 매핑이 1:1로 고정됩니다. 따라서, 도메인 객체에 대한 CRUD 작업이 매우 간편합니다. 그러나, 복잡한 관계를 가지는 데이터베이스의 경우, Active Record 패턴은 유연성이 떨어질 수 있습니다.
+
+Data Mapper 패턴은 도메인 객체와 데이터베이스 간의 매핑이 유연합니다. 따라서, 복잡한 관계를 가지는 데이터베이스에서도 유연하게 동작할 수 있습니다. 그러나, CRUD 작업을 수행할 때에는 Data Mapper 클래스를 통해야 하기 때문에 구현이 복잡할 수 있습니다.
+
+4. 테스트 용이성 차이점
+   Active Record 패턴은 도메인 객체와 데이터베이스 테이블 간의 매핑이 1:1로 고정됩니다. 따라서, 도메인 객체에 대한 CRUD 작업이 매우 간편합니다. 또한, Active Record 클래스는 일반적으로 도메인 객체를 나타내기 때문에, 테스트 용이성이 높습니다.
+
+반면에 Data Mapper 패턴은 도메인 객체와 데이터베이스 간의 매핑이 유연합니다. 따라서, 복잡한 관계를 가지는 데이터베이스에서도 유연하게 동작할 수 있습니다. 그러나, CRUD 작업을 수행할 때에는 Data Mapper 클래스를 통해야 하기 때문에 구현이 복잡할 수 있으며, 테스트 용이성도 떨어질 수 있습니다.
+
+결론적으로, Active Record 패턴은 단순한 애플리케이션에서 유용하며, Data Mapper 패턴은 복잡한 관계를 가지는 데이터베이스에서 유용합니다.
