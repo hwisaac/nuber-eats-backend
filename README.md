@@ -334,6 +334,10 @@ export class AppModule {}
 
 `TypeOrmModule.forRoot()` 메소드를 사용하여 `TypeORM`의 설정을 정의합니다
 
+### 실행
+
+- `npm run start:dev` (nest start --watch 를 실행)
+
 ## ConfigService
 
 nest의 configuration module 으로 환경변수를 설정하자
@@ -354,6 +358,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'dev' ? '.env.dev' : '.env.test',
+      ignoreEnvFile: process.env.NODE_ENV === 'prod', // deploy시(production 환경) 환경변수 파일 사용하지 않기
     }),
     // 나머지
   ],
@@ -362,3 +367,11 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
 })
 export class AppModule {}
 ```
+
+### validating ConfigService
+
+> 조건이 갖춰지지 않으면 app이 실행되지 않게 하자
+
+설치
+
+- `npm i joi`
