@@ -3,6 +3,7 @@ import { CreateRestaurantDto } from './dtos/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dtos/update-restaurant.dto';
 import { Restaurant } from './entities/restaurant.entity';
 import { RestaurantService } from './restaurants.service';
+
 @Resolver((of) => Restaurant)
 export class RestaurantResolver {
   constructor(private readonly restaurantService: RestaurantService) {}
@@ -23,6 +24,7 @@ export class RestaurantResolver {
       return false;
     }
   }
+
   @Mutation((returns) => Boolean)
   async updateRestaurant(
     @Args('input') updateRestaurantDto: UpdateRestaurantDto,
